@@ -1,0 +1,99 @@
+version: '3.8'
+
+x-kafka-env: &kafka-env
+  KAFKA_BROKER_ID: 1
+  KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+  KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+  KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+
+x-trg-env: &trg-env
+  POSTGRES_HOST: "my_small_dwh"
+  POSTGRES_DB: postgres
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_PORT: 5432
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    restart: always
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    restart: always
+    depends_on:
+      - zookeeper
+    environment:
+      <<: *kafka-env
+    ports:
+      - "9092:9092"
+
+  spark-master:
+    image: bitnami/spark:latest
+    container_name: spark-master
+    environment:
+      SPARK_MODE: master
+      SPARK_MASTER_URL: spark://spark-master:7077
+      SPARK_SUBMIT_OPTIONS: --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.1,org.apache.kafka:kafka-clients:3.7.0
+    volumes:
+      - ./spark/master/checkpoint:/tmp/checkpoint
+      - ./spark/master/data:/tmp/data
+    ports:
+      - "8080:8080"
+
+  spark-worker:
+    image: bitnami/spark:latest
+    container_name: spark-worker
+    environment:
+      SPARK_MODE: worker
+      SPARK_MASTER_URL: spark://spark-master:7077
+      SPARK_WORKER_CORES: 2
+      SPARK_WORKER_MEMORY: "2g"
+      SPARK_SUBMIT_OPTIONS: --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.1,org.apache.kafka:kafka-clients:3.7.0
+    volumes:
+      - ./spark/worker/checkpoint:/tmp/checkpoint
+      - ./spark/worker/data:/tmp/data
+    depends_on:
+      - spark-master
+
+  producer:
+    build: ./producer
+    container_name: kafka_producer
+    restart: always
+    environment:
+      <<: *kafka-env
+    volumes:
+      - ./producer:/usr/src/app
+    depends_on:
+      - kafka
+
+  consumer:
+    build: ./consumer
+    container_name: kafka_consumer
+    restart: always
+    environment:
+      JAVA_OPTS: '-Dio.netty.tryReflectionSetAccessible=true --add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED'
+      SPARK_MASTER_URL: spark://spark-master:7077
+      <<: [*kafka-env, *trg-env]
+    volumes:
+      - ./consumer:/usr/src/app
+    depends_on:
+      - kafka
+      - spark-worker
+
+  my_small_dwh:
+    image: postgres:13
+    container_name: my_small_dwh
+    environment:
+      <<: *trg-env
+    restart: always
+    ports:
+      - "5432:5432"
+    expose:
+      - "5432"
