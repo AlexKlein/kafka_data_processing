@@ -1,5 +1,5 @@
 # Use an official Python runtime
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 # Developer and maintainer of the project
 LABEL maintainer="Aleksandr Klein"
@@ -18,6 +18,7 @@ WORKDIR /usr/src/app
 
 # Update packages and install necessary dependencies
 RUN apt-get update \
+ && apt-get install -y libpq-dev gcc \
  && apt install wget -y \
  && apt-get install software-properties-common -y \
  && apt-add-repository 'deb http://security.debian.org/debian-security stretch/updates main'
@@ -58,7 +59,9 @@ RUN wget -P /opt/spark/jars https://repo1.maven.org/maven2/org/apache/spark/spar
 
 # Set Java and Spark executables are executable
 RUN chmod -R 755 /usr/lib/jvm/java-${JAVA_VERSION}-openjdk-amd64/bin \
- && chmod -R 755 /opt/spark
+ && chmod -R 755 /opt/spark \
+ && chmod -R 755 /usr/local/hadoop \
+ && chmod -R 755 /usr/local/bin
 
 # Set environment variables
 ENV JAVA_HOME="/usr/lib/jvm/java-${JAVA_VERSION}-openjdk-amd64"
@@ -66,9 +69,9 @@ ENV PATH="${PATH}:$JAVA_HOME/bin"
 ENV _JAVA_OPTIONS="-Xmx512M"
 ENV SPARK_HOME="/opt/spark"
 ENV PATH="${PATH}:$SPARK_HOME/bin:$SPARK_HOME/sbin"
-ENV PYTHONPATH="$SPARK_HOME/python"
-ENV PYSPARK_PYTHON="$SPARK_HOME/python"
-ENV PYSPARK_DRIVER_PYTHON="$SPARK_HOME/python"
+ENV PYTHONPATH="/usr/local/bin"
+ENV PYSPARK_PYTHON="/opt/bitnami/python/bin/python"
+ENV PYSPARK_DRIVER_PYTHON="/opt/bitnami/python/bin/python"
 ENV HADOOP_HOME="/usr/local/hadoop"
 ENV PATH="$PATH:$HADOOP_HOME/sbin:$HADOOP_HOME/bin"
 

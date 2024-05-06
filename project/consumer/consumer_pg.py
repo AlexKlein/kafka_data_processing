@@ -3,7 +3,6 @@ import json
 import psycopg2
 import psycopg2.extras
 from kafka import KafkaConsumer
-from time import sleep
 
 ENV_VARS = {
     'host': os.getenv('POSTGRES_HOST'),

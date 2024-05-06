@@ -1,5 +1,5 @@
 # Use an official Python runtime
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 # Developer and maintainer of the project
 LABEL maintainer="Aleksandr Klein"

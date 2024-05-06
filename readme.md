@@ -13,16 +13,17 @@ This project demonstrates real-time data processing using Apache Kafka for messa
 ## Build and Run
 
 When you need to start the app with all infrastructure, you have to make this steps:
-1. Correct your credential files in the [YML-file](./project/docker-compose.yml).
-2. Run the following: `docker-compose up -d --build` command. Give it some time. Your app, tables, and Airflow will soon be ready.
+1. Correct your credential files in the [yml-file](./project/docker-compose.yml).
+2. Change to the directory `cd project` to stay in the same folder as `docker-compose.yml`.
+3. Run the following: `docker-compose up -d --build` command. Give it some time. Your app, tables, and Airflow will soon be ready.
 
-# Services
+## Services
 
-## Producer Service
+### Producer Service
 
 The producer simulates stock price data and sends it to a Kafka topic named `simulated_stock_prices`. It generates new data every second for different stock symbols like `AAPL`, `MSFT`, etc.
 
-## Consumer Service
+### Consumer Service
 
 The consumer service runs two main threads:
 
